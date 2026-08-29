@@ -12,7 +12,7 @@ pipeline {
         stage('Build') {
             steps {
                 dir('backend') {
-                    bat '.\mvnw.cmd clean package -DskipTests'
+                    sh './mvnw clean package -DskipTests'
                 }
             }
         }
@@ -20,14 +20,24 @@ pipeline {
         stage('Test') {
             steps {
                 dir('backend') {
-                    bat '.\mvnw.cmd test'
+                    sh './mvnw test'
+                }
+            }
+        }
+
+        stage('SonarQube Analysis') {
+            steps {
+                dir('backend') {
+                    withSonarQubeEnv('SonarQube') {
+                        sh './mvnw sonar:sonar'
+                    }
                 }
             }
         }
 
         stage('Docker Build') {
             steps {
-                bat 'docker build -t java-3tier-backend:1.0 backend'
+                sh 'docker build -t java-3tier-backend:1.0 backend'
             }
         }
     }
