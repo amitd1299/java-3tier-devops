@@ -1,0 +1,60 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Java 3-Tier Application</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 700px;
+            margin: 80px auto;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .card {
+            padding: 30px;
+            border: 1px solid #ddd;
+            border-radius: 12px;
+        }
+
+        button {
+            padding: 12px 24px;
+            cursor: pointer;
+        }
+
+        #result {
+            margin-top: 20px;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="card">
+    <h1>Java 3-Tier Application</h1>
+    <p>Frontend → Spring Boot → MySQL</p>
+
+    <button onclick="checkBackend()">Check Backend</button>
+
+    <div id="result">Waiting...</div>
+</div>
+
+<script>
+async function checkBackend() {
+    const result = document.getElementById("result");
+
+    try {
+        const response = await fetch("/api/hello");
+        const data = await response.json();
+
+        result.textContent = data.message;
+    } catch (error) {
+        result.textContent = "Backend connection failed";
+    }
+}
+</script>
+
+</body>
+</html>
