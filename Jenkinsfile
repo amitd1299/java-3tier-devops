@@ -5,6 +5,13 @@ pipeline {
         jdk 'JDK-21'
     }
 
+    environment {
+        IMAGE_NAME = 'java-3tier-backend'
+        NEXUS_REGISTRY = '172.31.11.48:8082'
+        IMAGE_TAG = "${BUILD_NUMBER}"
+        FULL_IMAGE = "${NEXUS_REGISTRY}/${IMAGE_NAME}:${BUILD_NUMBER}"
+    }
+
     stages {
 
         stage('Checkout') {
@@ -41,7 +48,11 @@ pipeline {
 
         stage('Docker Build') {
             steps {
-                sh 'docker build -t java-3tier-backend:1.0 backend'
+                sh '''
+                    docker build \
+                        -t ${IMAGE_NAME}:${IMAGE_TAG} \
+                        backend
+                '''
             }
         }
 
@@ -55,18 +66,41 @@ pipeline {
                     )
                 ]) {
                     sh '''
-                        echo "$NEXUS_PASSWORD" | docker login localhost:8082 \
+                        echo "$NEXUS_PASSWORD" | docker login ${NEXUS_REGISTRY} \
                             -u "$NEXUS_USER" \
                             --password-stdin
 
-                        docker tag java-3tier-backend:1.0 \
-                            localhost:8082/java-3tier-backend:1.0
+                        docker tag ${IMAGE_NAME}:${IMAGE_TAG} \
+                            ${FULL_IMAGE}
 
-                        docker push localhost:8082/java-3tier-backend:1.0
+                        docker push ${FULL_IMAGE}
 
-                        docker logout localhost:8082
+                        docker logout ${NEXUS_REGISTRY}
                     '''
                 }
+            }
+        }
+
+        stage('Kubernetes Deploy') {
+            steps {
+                sh '''
+                    kubectl set image deployment/java-3tier-backend \
+                        java-3tier-backend=${FULL_IMAGE}
+
+                    kubectl rollout status deployment/java-3tier-backend \
+                        --timeout=180s
+                '''
+            }
+        }
+
+        stage('Verify Backend') {
+            steps {
+                sh '''
+                    kubectl get deployment java-3tier-backend
+                    kubectl get pods -l app=java-3tier-backend
+                    kubectl get svc java-3tier-backend
+                    kubectl get endpoints java-3tier-backend
+                '''
             }
         }
     }
